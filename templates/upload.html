@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" >
+        <title>Flask test</title>
+        
+    </head>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='test_6.css') }}"/>    
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+    <body>
+        <ul>
+            <li><a href="../"class="active">首頁</a></li>
+            <li><a href="../album">帳戶 </a></li>
+            <li><a href="../upload">上傳</a></li>
+            <li><a href="../logout">登出</a></li>
+            <p></p>
+            
+        </ul>
+        <form method="POST">
+        <div style="padding-top: 42px;" >
+            <time id="clock" class="time">+00:00:00</time>
+            <table align="center">
+                <tr >
+                    <th>買/賣</th>
+                    <th>交易時間</th>
+                    <th>股票代號</th>
+                    <th>股票名稱</th>
+                    <th>單位成本</th>
+                    <th>股數</th>
+                    <th>手續費</th>
+                    <th>交易稅</th>
+                    <th>淨收付</th>
+                    <th>損益</th>
+                </tr >
+                <tr >   
+                    <td><input size=12 class="w3-input w3-border w3-round-large" type='text' name="buy_sell" value={{buy_sell}}></td> 
+                    <td><input size=30 class="w3-input w3-border w3-round-large" type='text' name="time" value={{time}}></td> 
+                    <td><input class="w3-input w3-border w3-round-large" type='text' name="num" value={{num}}></td> 
+                    <td><input size=35 class="w3-input w3-border w3-round-large" type='text' name="name" value={{name}}></td> 
+                    <td><input class="w3-input w3-border w3-round-large" type='text' name="value" value={{value}}></td> 
+                    <td><input class="w3-input w3-border w3-round-large" type='text' name="volumn" value={{volumn}}></td>
+                    <td><input class="w3-input w3-border w3-round-large" type='text' name="commission" value={{commission}}></td> 
+                    <td><input class="w3-input w3-border w3-round-large" type='text' name="tax" value={{tax}}></td> 
+                    <td><input size=30 class="w3-input w3-border w3-round-large" type='text' name="total_cost" value={{total_cost}}></td> 
+                    <td><input size=25 class="w3-input w3-border w3-round-large" type='text' name="lost" value={{lost}}></td>  
+                    <td><input class="button" value="送出" type="submit" name="send"></td>
+                </tr>
+
+            </table>
+
+            {% for i in tables %}
+                {{ i|safe }}                 
+            {% endfor %}
+            
+        </div>
+        </form>
+        <script type="text/javascript">
+
+        var t = null;
+        function time(){
+        var now=new Date();
+        var sec=now.getSeconds();
+        var min=now.getMinutes();
+        var hour=now.getHours();
+
+        document.getElementById("clock").innerHTML = "+"+(hour>9?hour:"0"+hour)
+                +":"+(min>9?min:"0"+min)
+                +":"+(sec>9?sec:"0"+sec)  ;
+        t = setTimeout(time,1000);   
+        }
+        window.onload=function(){time()}
+
+        </script>
+            
+    </body>
+</html>
+
