@@ -12,15 +12,17 @@ import pandas as pd
 import time 
 import flask_login
 from flask_login import current_user
-
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
 
 def stock_crawl(targets):
     timestamp = int(time.time() * 1000 + 1000000)
     stock_list = '|'.join('tse_{}.tw'.format(target) for target in targets)
     query_url = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?"+ stock_list
     query_url = '{}?_={}&ex_ch={}'.format(query_url, timestamp, stock_list)
-    #print(query_url)
+    print(query_url)
     try:
         data = json.loads(urlopen(query_url).read())
         column = ['c','n','z','tv','v','o','h','l','y']
@@ -41,6 +43,8 @@ app = Flask(__name__) #創建一個Flask的 instance
 app.secret_key = '123456789'
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
+acc_save = './stock_trans_save/'
+
 
 class User(flask_login.UserMixin):
     pass
@@ -98,7 +102,12 @@ def Register():
                 member[request.values['userid']]={'password':request.values['userpw'],
                                                 'nick':request.values['username']}
                 with open('./member.json', 'w') as f:
-                    json.dump(member, f)
+                    json.dump(member, f) #儲存帳號資料
+                    #創建檔案資料夾&csv檔，複製有別的寫法、先用蠢一點的
+                    os.mkdir(acc_save+str(request.values['username'])) 
+                    trans = pd.read_csv(acc_save+'stock_trans.csv', dtype={'股票代號':str})  
+                    trans.to_csv (acc_save+str(request.values['username'])+'/stock_trans.csv', index = False, header=True)
+
                     print("123456789")
                 return render_template('test.html')
     return render_template('register.html')
@@ -134,7 +143,10 @@ def Logout():
 
 @app.route('/upload', methods=['GET','POST'])
 def Upload():
-    trans_table = pd.read_csv('./stock_trans.csv', dtype={'股票代號':str})
+    with open('./member.json', 'r') as file: #取username
+        users = json.load(file)
+    user_nick = users[current_user.id]['nick']
+    trans_table = pd.read_csv(acc_save+str(user_nick)+'/stock_trans.csv', dtype={'股票代號':str})
     trans_table = trans_table.loc[:,'買/賣':'損益']
     if request.method=='POST':
         if request.values['send']=='送出'  :
@@ -150,7 +162,7 @@ def Upload():
                             '損益': [request.values['lost']]
                             })
             trans_table = trans_table.append(df, ignore_index=True)
-            trans_table.to_csv ('./stock_trans.csv', index = False, header=True)
+            trans_table.to_csv (acc_save+str(user_nick)+'/stock_trans.csv', index = False, header=True)
             trans_table = trans_table.reindex(index=trans_table.index[::-1])
             return render_template('upload.html',
                         tables=[trans_table.to_html(classes='mystyle',header="true")])
@@ -162,47 +174,69 @@ def Upload():
 def account():
     with open('./member.json', 'r') as file: #取username
             users = json.load(file)
-    print(users[current_user.id]['nick'])
-    trans = pd.read_csv('./stock_trans.csv', dtype={'股票代號':str})
-    trans = trans.loc[:,'買/賣':'損益']
-    deposit = dict() #庫存
-    price = dict() #庫存的單位平均成本
-    diff = dict() #價差(含手續費，不含賣出手續費+交易稅)
-    earn = 0
-    for i in range(len(trans)): 
-        name = trans['股票代號'].iloc[i]
-        if name not in deposit:   
-            if trans['買/賣'].iloc[i] == '買':
-                deposit[name] = trans['股數'].iloc[i]
+    user_nick = users[current_user.id]['nick']
+    try:
+        trans = pd.read_csv(acc_save+str(user_nick)+'/stock_trans.csv', dtype={'股票代號':str})
+        trans = trans.loc[:,'買/賣':'損益']
+        deposit = dict() #庫存
+        price = dict() #庫存的單位平均成本
+        diff = dict() #價差(含手續費，不含賣出手續費+交易稅)
+        earn = 0
+        for i in range(len(trans)): 
+            name = trans['股票代號'].iloc[i]
+            if name not in deposit:   
+                if trans['買/賣'].iloc[i] == '買':
+                    deposit[name] = trans['股數'].iloc[i]
+                else:
+                    deposit[name] = -trans['股數'].iloc[i]
+                price[name] = trans['單位成本'].iloc[i]
+                diff[name] = trans['淨收付'].iloc[i]
             else:
-                deposit[name] = -trans['股數'].iloc[i]
-            price[name] = trans['單位成本'].iloc[i]
-            diff[name] = trans['淨收付'].iloc[i]
-        else:
-            p = deposit[name] / (trans['股數'].iloc[i] + deposit[name])
-            price[name] = price[name] * p + trans['單位成本'].iloc[i] * (1-p)
-            diff[name] += trans['淨收付'].iloc[i]
-            if trans['買/賣'].iloc[i] == '買':
-                deposit[name] += trans['股數'].iloc[i]
-            else:
-                deposit[name] -= trans['股數'].iloc[i]
-                
-        for k in list(deposit.keys()): #將庫存為0的刪掉
-            if deposit[k] ==0:
-                earn += diff[k]
-                del diff[k]
-                del deposit[k]
-                del price[k]
-    stock_list = list(deposit.keys())
-    df = stock_crawl(stock_list)
-    profit = dict() #當前損益(不含賣出交易稅&手續費)
-    statistics = dict()
-    for name,now,cost,num in zip(deposit.keys(), df['昨收價'], diff.values(), deposit.values()):
-        profit[name] = cost + now*num 
-        statistics[name] = now*num
+                p = deposit[name] / (trans['股數'].iloc[i] + deposit[name])
+                price[name] = price[name] * p + trans['單位成本'].iloc[i] * (1-p)
+                diff[name] += trans['淨收付'].iloc[i]
+                if trans['買/賣'].iloc[i] == '買':
+                    deposit[name] += trans['股數'].iloc[i]
+                else:
+                    deposit[name] -= trans['股數'].iloc[i]
+                    
+            for k in list(deposit.keys()): #將庫存為0的刪掉
+                if deposit[k] ==0:
+                    earn += diff[k]
+                    del diff[k]
+                    del deposit[k]
+                    del price[k]
+        stock_list = list(deposit.keys())
+        df = stock_crawl(stock_list)
+        profit = dict() #當前損益(不含賣出交易稅&手續費)
+        statistics = dict()
+        price_now = dict() #當盤成交價
+        avg = dict() #平均成交價
+        
+        for name,now,cost,num in zip(deposit.keys(), df['當盤成交價'], diff.values(), deposit.values()):
+            profit[name] = round(cost + now*num, 2) #round是只取到小數點後2位
+            statistics[name] = now*num
+            avg[name] =  round(abs(cost/num), 2)
+            price_now[name] = round(now, 2)
 
-    return render_template('update.html', trans_record=deposit, profit=profit,
-                            earn=earn, login=current_user.is_authenticated)
+        total = sum([i for i in profit.values()]) #當前損益總和
+        print(total)
+        patches,l_text,p_text = plt.pie(statistics.values(), labels=statistics.keys(), autopct='%.2f%%',
+                                radius=1, labeldistance=1.2, pctdistance=0.6,
+                                wedgeprops=dict(width=0.3,edgecolor='w'))
+        for t in l_text:
+            t.set_size(15)
+        for t in p_text:
+            t.set_size(12)
+        img_name = str(user_nick)+'.png'
+        plt.savefig('./static/images/'+img_name)
+        plt.close()
+        #plt.show()
+        return render_template('update.html', trans_record=deposit, profit=profit, total=total,
+                                earn=earn, login=current_user.is_authenticated, no_trans=False,
+                                img_name=img_name, rowspan_num=len(profit), avg=avg, price_now=price_now)
+    except:
+        return render_template('update.html', no_trans=True)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port="5001", debug=True)

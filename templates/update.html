@@ -2,8 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8" >
-        <title>Flask test</title>
-        
+        <title>Flask test</title>    
     </head>
     <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='test_6.css') }}"/>    
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
@@ -22,34 +21,47 @@
             <time id="clock" class="time" >+00:00:00</time>
         
             <table align="center" cellspacing="5">
-                <tr style="background-color: rgb(203, 231, 255)">
-                    <td rowspan="9" width=5%><img src="{{ url_for('static', filename='images/test.png') }}" > </td>
-                </tr>
-        
-                <tr style="background-color:  #9ec5c2;">
-                    <th>股票代號</th>
-                    <th>剩餘數量</th>
-                    <th>當前損益(不含手續費)</th>
-                </tr >
-                {% for key, value in trans_record.items() %}
-                {% for key2, value2 in profit.items() %}
-                {% if key2==key %}    
-                <tr style="background-color: rgb(203, 231, 255)">  
-                    
-                    <th>{{ key }}</th>
-                    <td>{{ value }}</td>
-                    {% if value2 < 0 %}
-                    <td id="price" style="color: green">{{ value2 }}</td>  
-                    {% else %}
-                    <td id="price" style="color: red">{{ value2 }}</td>  
+                {% if no_trans==True %}  
+                    <tr><td>There is something wrong</td></tr>
+                {% else %}
+                    <tr style="background-color: rgb(203, 231, 255)">
+                        <th rowspan="{{rowspan_num+4}}" width=5%><img src="{{ url_for('static', filename='images/'+img_name) }}" width="320" height="240"> </th>
+                    </tr>
+                    <tr style="background-color:  #9ec5c2;">
+                        <th>股票代號</th>
+                        <th>剩餘數量</th>
+                        <th>平均成交價</th>
+                        <th>當前成交價</th>
+                        <th>當前損益(不含手續費)</th>
+                    </tr >
+                    {% for key, value in trans_record.items() %}
+                    {% for key2, value2 in profit.items() %}
+                    {% for avg_key, avg_value in avg.items() %}
+                    {% for price_now_key, price_now_value in price_now.items() %}
+                    {% if key2==key and key2==avg_key and key2==price_now_key %}    
+                    <tr style="background-color: rgb(203, 231, 255)">  
+                        <th>{{ key }}</th>
+                        <td>{{ value }}</td>
+                        <td>{{ avg_value }}</td>
+                        <td>{{ price_now_value }}</td>
+                        {% if value2 < 0 %}
+                        <td id="price" style="color: green">{{ value2 }}</td>  
+                        {% else %}
+                        <td id="price" style="color: red">{{ value2 }}</td>  
+                        {% endif %}
+                    </tr>
                     {% endif %}
-                </tr>
+                    {% endfor %}
+                    {% endfor %}
+                    {% endfor %}
+                    {% endfor %}
+                    <tr style="background-color: rgb(203, 231, 255)">
+                        <th style="text-align: right;" colspan="5">當前損益總和：{{total}}</th>
+                    </tr>
+                    <tr style="background-color: rgb(203, 231, 255)">
+                        <th style="text-align: right;" colspan="5">總金額(已實現)：{{earn}}</th>
+                    </tr>
                 {% endif %}
-                {% endfor %}
-                {% endfor %}
-                <tr style="background-color: rgb(203, 231, 255)">
-                    <th style="text-align: right;" colspan="3">總金額：{{earn}}</th>
-                </tr>
             </table>
 
         </div>
