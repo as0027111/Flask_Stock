@@ -1,5 +1,10 @@
 This is my test poject of Flask. You can record transaction of stock and check your profit of your account in real-time. 
-![image](https://user-images.githubusercontent.com/52644183/115110669-1d9f3b80-9faf-11eb-8f4f-44cc29a41d24.png)
-![image1](https://user-images.githubusercontent.com/52644183/115110680-2b54c100-9faf-11eb-82e1-d593e7d3fa9f.png)
 
-![](https://i.imgur.com/WIJPTgb.png)
+## Home page
+![image](https://user-images.githubusercontent.com/52644183/115110797-c9488b80-9faf-11eb-9c0b-c55c6c145bc8.png=500x)
+
+## Account page
+![image](https://user-images.githubusercontent.com/52644183/115110944-6acfdd00-9fb0-11eb-87c2-0d7931b20c33.png=500x)
+
+## Upload page
+![image](https://user-images.githubusercontent.com/52644183/115110984-a8cd0100-9fb0-11eb-846d-0798c0639764.png=500x)
